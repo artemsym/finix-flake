@@ -30,8 +30,20 @@
         polkit
         getty
         bash
-        dhcpcd
-        iwd
+        networkmanager
+        niri
+        sddm
+        pipewire
+        wireplumber
+        rtkit
+        bluetooth
+        avahi
+        gamemode
+        thermald
+        earlyoom
+        fstrim
+        udisks2
+        upower
       ];
       specialArgs = {
         modulesPath = toString nixpkgs + "/nixos/modules";

@@ -1,6 +1,9 @@
 { config, pkgs, ... }:
 {
-  imports = [ ./hardware-configuration.nix ];
+  imports = [
+    ./hardware-configuration.nix
+    ./desktop.nix
+  ];
 
   # Stick to finix's default `pkgs.linuxPackages` (well-tested against the
   # current nvidia driver) instead of `linuxPackages_latest`. The bleeding
@@ -32,8 +35,6 @@
     sysklogd.enable = true;
     dbus.enable = true;
     mdevd.enable = true;
-    dhcpcd.enable = true;
-    iwd.enable = true;
   };
 
   # Turing+ GPUs (RTX 20xx and newer) are best served by the open-source
@@ -52,7 +53,7 @@
   users.users.goth = {
     isNormalUser = true;
     description = "goth";
-    extraGroups = [ "wheel" ];
+    extraGroups = [ "wheel" "video" "audio" "networkmanager" ];
     hashedPassword = "$6$QJ3Ex.kogucotWwQ$l/m0lydG91nZbfM5Um899RSNaQkEWxp.6zaoyWHp7kaLhYs7z2tE/SnpnqciVdKOmzmTC15H51Kp.ACpw4p0..";
     packages = with pkgs; [];
   };
