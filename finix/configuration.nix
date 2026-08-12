@@ -2,7 +2,10 @@
 {
   imports = [ ./hardware-configuration.nix ];
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Stick to finix's default `pkgs.linuxPackages` (well-tested against the
+  # current nvidia driver) instead of `linuxPackages_latest`. The bleeding
+  # edge kernel often ships before nixpkgs' nvidia kernel-interface patches
+  # catch up, which is the usual reason the nvidia .ko fails to compile.
   finit.runlevel = 3;
   finit.services.nix-daemon = {
     environment.CURL_CA_BUNDLE = config.security.pki.caBundle;
@@ -32,6 +35,16 @@
     dhcpcd.enable = true;
     iwd.enable = true;
   };
+
+  # Turing+ GPUs (RTX 20xx and newer) are best served by the open-source
+  # kernel modules: they get patched for new kernels much faster than the
+  # closed proprietary ones, which is what usually causes the .ko to fail
+  # to build on a recent kernel.
+  hardware.nvidia = {
+    enable = true;
+    kernelModule = "open";
+  };
+  hardware.graphics.enable = true;
 
   networking.hostName = "finixos";
   time.timeZone = "Europe/Moscow";
