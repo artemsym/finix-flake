@@ -3,6 +3,7 @@
   imports = [
     ./hardware-configuration.nix
     ./desktop.nix
+    ./v2ray.nix
   ];
 
   # Stick to finix's default `pkgs.linuxPackages` (well-tested against the
