@@ -35,7 +35,12 @@
     polkit.enable = true;
     sysklogd.enable = true;
     dbus.enable = true;
-    mdevd.enable = true;
+    # udev (not mdevd) so /dev/disk/by-id and /dev/disk/by-uuid actually get
+    # populated -- with mdevd, filesystems have to be referenced by raw
+    # kernel names (/dev/sda1), which isn't safe on a multi-disk machine
+    # where drive letters can shift between boots. See the "mdevd" notes in
+    # https://github.com/finix-community/examples/blob/main/installations/README.md
+    udev.enable = true;
   };
 
   # Turing+ GPUs (RTX 20xx and newer) are best served by the open-source

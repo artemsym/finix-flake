@@ -15,10 +15,8 @@
 #     which does `caps = [ "^cap_net_bind_service" ]` for its own
 #     privileged-port bind. Same pattern here, plus `^cap_net_admin` for
 #     the iptables/routing work v2rayA's transparent-proxy mode needs.
-#   - MEDIUM: `pkgs.v2rayA` as the package attribute name -- this is what
-#     nixpkgs' own `services.v2raya` module builds from, but double-check
-#     with `nix search nixpkgs v2raya` if the build fails with "attribute
-#     'v2rayA' missing".
+#   - CONFIRMED: `pkgs.v2raya` (lowercase) is the correct nixpkgs attribute
+#     -- `nix search` found `legacyPackages.x86_64-linux.v2raya` (2.2.7.5).
 #   - MEDIUM: dropping `xray` into the service's `path` so v2rayA finds it
 #     by searching $PATH, instead of passing it an explicit flag/env var --
 #     nixpkgs' module wires `cliPackage` through some flag/env var
@@ -40,7 +38,7 @@
       "service/syslogd/ready"
       "net/route/default"
     ];
-    command = "${pkgs.v2rayA}/bin/v2raya";
+    command = "${pkgs.v2raya}/bin/v2raya";
     path = with pkgs; [
       iptables
       nftables
