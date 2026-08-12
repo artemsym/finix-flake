@@ -53,6 +53,11 @@
   };
   hardware.graphics.enable = true;
 
+  # Covers WiFi/other device firmware that isn't baked into the kernel
+  # itself. finix's own install docs call this out as the fix for wifi
+  # cards not showing up.
+  hardware.firmware = [ pkgs.linux-firmware ];
+
   networking.hostName = "finixos";
   time.timeZone = "Europe/Moscow";
 
