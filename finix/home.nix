@@ -117,18 +117,19 @@
     # colour slots ($1/$2, normally the two blues), so recolouring is just
     # reassigning those two rather than shipping custom ASCII.
     #
-    # Note that slot 2 being literal black means those arms sit at #000000
-    # against foot's stylix background (#0d1117) -- close to invisible. If
-    # it reads as a half-missing snowflake, swap "black" for "bright black"
-    # here, which renders as grey and keeps the two-tone look.
+    # Given as raw truecolor ANSI rather than the "red"/"black" palette
+    # names: those resolve against the terminal's own 16-colour palette,
+    # which stylix rewrites, so "red" came out muted and "black" landed on
+    # #0d1117 -- the same value as foot's background, i.e. invisible. These
+    # are absolute values and render the same regardless of the palette.
     programs.fastfetch = {
       enable = true;
       settings = {
         logo = {
           source = "nixos";
           color = {
-            "1" = "red";
-            "2" = "black";
+            "1" = "38;2;255;45;45";      # vivid red
+            "2" = "38;2;125;125;125";    # mid grey, reads as the dark half
           };
         };
       };
