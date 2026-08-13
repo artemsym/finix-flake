@@ -53,7 +53,7 @@
         spawn-at-startup "caelestia-shell"
 
         // wallpaper engine: was systemd.user.services.wallpaper
-        spawn-at-startup "linux-wallpaperengine" "--fps" "30" "--screen-root" "HDMI-A-1" "--screen-root" "DP-1" "2876210462"
+        spawn-at-startup "linux-wallpaperengine" "--fps" "30" "--screen-root" "HDMI-A-1" "--screen-root" "DP-1" "2481537915"
 
         // idle auto-lock: was systemd.user.services.idle. caelestia-shell's
         // own lock (modules/lock) only reacts to this IPC call -- there's no
@@ -69,6 +69,13 @@
     # `colors-dark` block itself, and those definitions are plain values,
     # not mkDefault -- setting them here too is a merge conflict, not an
     # override. Only what stylix has no opinion about is left.
+    # Same insurance as config.kdl above: if anything ever leaves a real
+    # foot.ini at this path, checkLinkTargets aborts the entire activation
+    # rather than skipping the one file, and every other config here
+    # silently stops updating too. Nothing here is hand-edited, so it's
+    # always safe to overwrite.
+    xdg.configFile."foot/foot.ini".force = true;
+
     programs.foot = {
       enable = true;
       settings = {
@@ -104,6 +111,27 @@
       enable = true;
       settings.user.name = "artemsym";
       settings.user.email = "artemsym@users.noreply.github.com";
+    };
+
+    # The built-in NixOS logo is the snowflake; fastfetch draws it from two
+    # colour slots ($1/$2, normally the two blues), so recolouring is just
+    # reassigning those two rather than shipping custom ASCII.
+    #
+    # Note that slot 2 being literal black means those arms sit at #000000
+    # against foot's stylix background (#0d1117) -- close to invisible. If
+    # it reads as a half-missing snowflake, swap "black" for "bright black"
+    # here, which renders as grey and keeps the two-tone look.
+    programs.fastfetch = {
+      enable = true;
+      settings = {
+        logo = {
+          source = "nixos";
+          color = {
+            "1" = "red";
+            "2" = "black";
+          };
+        };
+      };
     };
 
     # No `gtk` block here on purpose: stylix's gtk target sets gtk.enable,
