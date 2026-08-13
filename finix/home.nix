@@ -28,9 +28,19 @@
 
     # niri config: the gothness one verbatim (see ./dotfiles/niri-config.kdl),
     # plus the startup entries that replace the systemd user services.
-    xdg.configFile."niri/config.kdl".text =
-      builtins.readFile ./dotfiles/niri-config.kdl
-      + ''
+    #
+    # force = true: niri auto-generates a default config.kdl on first launch
+    # if none exists yet. That happened here before hm-activate ever got a
+    # chance to run (or an earlier run failed before reaching this file, e.g.
+    # the dconf bug fixed above), so a real file -- not a home-manager
+    # symlink -- was already sitting at this path. Without `force`,
+    # checkLinkTargets refuses to touch it and aborts activation entirely
+    # (every file below silently never gets applied, not just this one).
+    xdg.configFile."niri/config.kdl" = {
+      force = true;
+      text =
+        builtins.readFile ./dotfiles/niri-config.kdl
+        + ''
 
         // ---------- added for finix (no systemd user session) ----------
         // wallpaper engine: was systemd.user.services.wallpaper
@@ -43,6 +53,7 @@
         //   spawn-at-startup "swayidle" "-w" "timeout" "300" "swaylock" "before-sleep" "swaylock"
         spawn-at-startup "swayidle" "-w" "timeout" "300" "caelestia-shell ipc call lock lock" "before-sleep" "caelestia-shell ipc call lock lock"
       '';
+    };
 
     programs.foot = {
       enable = true;
