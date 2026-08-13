@@ -1,28 +1,31 @@
 # Desktop bits ported from the `gothness` NixOS system (github.com/artemsym/nixos).
 #
-# What made the cut: pieces that have a fairly direct finix module
-# equivalent, so they're low-risk to carry over as-is.
+# Session stack: greetd + tuigreet (Wayland-native TUI greeter) -> niri.
+# SDDM was the original attempt but its X11 greeter hung on this monitor's
+# EDID during mode validation (a bug in nvidia's closed-source X driver
+# blob, reproduced with both the open and closed kernel module -- see
+# nvidia-modevalidation.nix); greetd/tuigreet never touches Xorg at all, so
+# it sidesteps the bug entirely.
 #
-# What's deliberately left out, because finix has no ready module for it
-# (or it needs hands-on rework instead of a mechanical port):
-#   - home-manager + niri-caelestia-shell (the whole bar/launcher/lock UI).
-#     home-manager's `systemd.user.services.*` (wallpaper engine, idle-lock,
-#     the hyprpolkitagent launcher) assume a systemd --user session, which
-#     finix doesn't have (finit is pid 1 instead). These would need to become
-#     `finit.services.*` running as the user, or get started from niri's own
-#     config -- worth doing once the shell itself is confirmed working here.
-#   - the custom SDDM Qt greeter theme (`where-is-my-sddm-theme` override) --
-#     finix's `services.sddm` only exposes a plain `settings` (sddm.conf)
-#     option, no theme/package plumbing yet. Enabled below with defaults.
+# Seat management: elogind, not seatd. This matters -- elogind pairs with
+# `udev`, seatd pairs with `mdevd`; picking the wrong one leaves niri's
+# session forever "not active" (see finix-community/community-modules'
+# profiles.laptop for the canonical pairing). polkit also requires elogind
+# (logind) to track sessions; without it polkit's finit service crash-loops.
+#
+# Still not ported (see ./caelestia.nix, kept but not imported, and
+# ./home.nix's spawn-at-startup list):
+#   - caelestia-shell (the bar/launcher/lock UI) -- builds, but the current
+#     nixpkgs pin's `libcava` doesn't ship a cava.pc, which the plugin's
+#     cmake needs. Package is otherwise wired up in caelestia.nix.
+#   - the custom SDDM Qt greeter theme -- moot now that SDDM isn't used.
 #   - Steam as a NixOS module (firewall ports, controller udev rules) --
 #     no `programs.steam` in finix. `pkgs.steam` is added as a plain
 #     package below, which covers basic launching but not the extras.
-#   - v2ray/xray + the nftables capability wiring for it -- no v2raya module
-#     in finix, and the AmbientCapabilities plumbing needs verifying against
-#     finit's actual capability support before it's worth writing.
 #   - printing (cups) and libvirtd/virt-manager -- finix has no modules for
 #     either yet.
-#   - zramSwap and `networking.firewall.*` -- no matching finix options.
+#   - zramSwap and `networking.firewall.*` -- no matching finix options
+#     (v2ray.nix manages its own iptables/nftables rules instead).
 { config, pkgs, ... }:
 {
   services.networkmanager.enable = true;
@@ -40,10 +43,11 @@
     LC_TIME = "ru_RU.UTF-8";
   };
 
-  # ===== Niri + SDDM =====
+  # ===== niri + greetd/tuigreet =====
   programs.niri.enable = true;
-
-  services.sddm.enable = true;
+  programs.tuigreet.enable = true;
+  services.elogind.enable = true;
+  fonts.fontconfig.enable = true;
 
   # ===== Audio (pipewire) =====
   programs.pipewire = {
@@ -134,7 +138,7 @@
 
     # --- GUI ---
     hicolor-icon-theme adwaita-icon-theme
-    vlc virt-manager gimp inkscape vscode
+    firefox vlc virt-manager gimp inkscape vscode
     obs-studio qbittorrent gparted
     dconf-editor blueman
 
@@ -151,7 +155,7 @@
     pandoc bibata-cursors
 
     # --- Niri / Wayland utils ---
-    foot starship
+    foot starship wofi
     grim slurp fftw
 
     # --- Misc ---
@@ -160,6 +164,6 @@
 
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
+    portals = with pkgs; [ xdg-desktop-portal-gtk ];
   };
 }

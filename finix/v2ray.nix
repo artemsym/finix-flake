@@ -5,58 +5,32 @@
 #   systemd.services.v2raya.serviceConfig.AmbientCapabilities/CapabilityBoundingSet
 #     = [ CAP_NET_ADMIN CAP_NET_BIND_SERVICE ];
 #
-# finix has no v2rayA module, so this hand-writes a `finit.services.v2raya`
-# stanza. Confidence levels, since none of this was build-tested (no nix
-# available in the sandbox this was written in):
+# finix has no v2rayA module, so this hand-writes a finit.services.v2raya
+# stanza. Runs as root (no `user`/`caps` restriction) -- v2rayA's transparent
+# proxy mode manages iptables/nftables rules directly and gothness's own
+# systemd unit granted it CAP_NET_ADMIN/CAP_NET_BIND_SERVICE for the same
+# reason. An earlier, more restrictive version tried to run it as a
+# dedicated unprivileged user with just those two capabilities (mirroring
+# finix's own `blocky` module) but that overcomplicated things for no
+# measurable benefit here.
 #
-#   - HIGH: the `caps`/`user`/`group`/`path`/`conditions` shape below is
-#     copied from finix's own real-world example of an unprivileged
-#     network daemon needing a capability -- see modules/services/blocky,
-#     which does `caps = [ "^cap_net_bind_service" ]` for its own
-#     privileged-port bind. Same pattern here, plus `^cap_net_admin` for
-#     the iptables/routing work v2rayA's transparent-proxy mode needs.
-#   - CONFIRMED: `pkgs.v2raya` (lowercase) is the correct nixpkgs attribute
-#     -- `nix search` found `legacyPackages.x86_64-linux.v2raya` (2.2.7.5).
-#   - MEDIUM: dropping `xray` into the service's `path` so v2rayA finds it
-#     by searching $PATH, instead of passing it an explicit flag/env var --
-#     nixpkgs' module wires `cliPackage` through some flag/env var
-#     internally that isn't reproduced here. If v2rayA starts but can't
-#     find/launch its xray core, that's almost certainly it -- check what
-#     nixpkgs' upstream `services.v2raya` module actually passes for
-#     `cfg.cliPackage` and mirror it into `command`/`environment` below.
-#
-# No firewall is configured on finix yet (see the note in desktop.nix), so
-# nothing needs opening for v2rayA's web UI (port 2017 by default).
+# Package attribute is `pkgs.v2raya` (lowercase a) but the actual binary
+# inside is `bin/v2rayA` (capital A) -- confirmed by inspecting the built
+# derivation; using the lowercase name here makes finit silently skip the
+# service ("No such file or directory").
 { pkgs, ... }:
 {
   finit.services.v2raya = {
-    user = "v2raya";
-    group = "v2raya";
-
     description = "v2rayA transparent proxy manager";
-    conditions = [
-      "service/syslogd/ready"
-      "net/route/default"
-    ];
-    command = "${pkgs.v2raya}/bin/v2raya";
-    path = with pkgs; [
-      iptables
-      nftables
-      iproute2
-      bash
-      xray
-    ];
-    caps = [
-      "^cap_net_admin"
-      "^cap_net_bind_service"
-    ];
+    conditions = "service/syslogd/ready";
+    command = "${pkgs.v2raya}/bin/v2rayA";
+    path = with pkgs; [ iptables nftables iproute2 bash xray ];
     log = true;
     nohup = true;
   };
 
-  users.users.v2raya = {
-    isSystemUser = true;
-    group = "v2raya";
-  };
-  users.groups.v2raya = { };
+  # Pin the package into the system profile so it isn't garbage-collected
+  # out from under the finit service (which only referenced its store path
+  # indirectly through the generated finit.d/v2raya.conf).
+  environment.systemPackages = [ pkgs.v2raya ];
 }

@@ -1,5 +1,44 @@
 {
   "nodes": {
+    "caelestia-cli": {
+      "inputs": {
+        "caelestia-shell": [
+          "niri-caelestia-shell"
+        ],
+        "nixpkgs": [
+          "niri-caelestia-shell",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772764582,
+        "narHash": "sha256-hSwjmpXHFqzSXrndVekA0IheKrbC7wi0IbfZTYwlmXw=",
+        "owner": "caelestia-dots",
+        "repo": "cli",
+        "rev": "4bcd42f482d038b98145b0b03388244b68b7d35d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "caelestia-dots",
+        "repo": "cli",
+        "type": "github"
+      }
+    },
+    "community-modules": {
+      "locked": {
+        "lastModified": 1786089679,
+        "narHash": "sha256-3Tg+d2GUyCn6GFFIaKpo0KPFQ+N+uWtNSoj8b7peIkY=",
+        "owner": "finix-community",
+        "repo": "community-modules",
+        "rev": "719706531cc2086dd5710c6a23bad8163a553b03",
+        "type": "github"
+      },
+      "original": {
+        "owner": "finix-community",
+        "repo": "community-modules",
+        "type": "github"
+      }
+    },
     "finix": {
       "locked": {
         "lastModified": 1786207804,
@@ -12,6 +51,28 @@
       "original": {
         "owner": "finix-community",
         "repo": "finix",
+        "type": "github"
+      }
+    },
+    "niri-caelestia-shell": {
+      "inputs": {
+        "caelestia-cli": "caelestia-cli",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "quickshell": "quickshell"
+      },
+      "locked": {
+        "lastModified": 1785198121,
+        "narHash": "sha256-td+HNX03AJPqMbmxu41EF2MLH7tEafBoUWxmQFCd+y0=",
+        "owner": "jutraim",
+        "repo": "niri-caelestia-shell",
+        "rev": "fe36491a77c56ac51d6cad1c6fc05f9828fad837",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jutraim",
+        "repo": "niri-caelestia-shell",
         "type": "github"
       }
     },
@@ -31,9 +92,32 @@
         "type": "github"
       }
     },
+    "quickshell": {
+      "inputs": {
+        "nixpkgs": [
+          "niri-caelestia-shell",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772925576,
+        "narHash": "sha256-mMoiXABDtkSJxCYDrkhJ/TrrJf5M46oUfIlJvv2gkZ0=",
+        "ref": "refs/heads/master",
+        "rev": "15a84097653593dd15fad59a56befc2b7bdc270d",
+        "revCount": 750,
+        "type": "git",
+        "url": "https://git.outfoxxed.me/outfoxxed/quickshell"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.outfoxxed.me/outfoxxed/quickshell"
+      }
+    },
     "root": {
       "inputs": {
+        "community-modules": "community-modules",
         "finix": "finix",
+        "niri-caelestia-shell": "niri-caelestia-shell",
         "nixpkgs": "nixpkgs"
       }
     }

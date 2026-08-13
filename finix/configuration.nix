@@ -4,6 +4,11 @@
     ./hardware-configuration.nix
     ./desktop.nix
     ./v2ray.nix
+    ./nvidia-modevalidation.nix
+    ./niri-debug.nix
+    ./polkit-fix.nix
+    ./extras.nix
+    ./home.nix
   ];
 
   # Stick to finix's default `pkgs.linuxPackages` (well-tested against the
@@ -41,17 +46,26 @@
     # where drive letters can shift between boots. See the "mdevd" notes in
     # https://github.com/finix-community/examples/blob/main/installations/README.md
     udev.enable = true;
+    openssh.enable = true;
   };
 
-  # Turing+ GPUs (RTX 20xx and newer) are best served by the open-source
-  # kernel modules: they get patched for new kernels much faster than the
-  # closed proprietary ones, which is what usually causes the .ko to fail
-  # to build on a recent kernel.
+  # RTX 2070: the closed proprietary driver is what's proven to work on this
+  # exact GPU + monitor combo (same driver gothness runs). The open kernel
+  # module loads fine too, but the userspace X11 mode-validation code (which
+  # is the same closed-source blob either way) hits an unrelated hang on this
+  # monitor -- see nvidia-modevalidation.nix.
   hardware.nvidia = {
     enable = true;
-    kernelModule = "open";
+    kernelModule = "closed";
   };
   hardware.graphics.enable = true;
+
+  # Belt-and-suspenders blacklist: finix's hardware.nvidia module already
+  # blacklists nouveau via /etc/modprobe.d, but that file isn't guaranteed to
+  # be in place before the initrd's own module autoprobing runs. Passing it
+  # on the kernel cmdline (what NixOS's boot.blacklistedKernelModules does
+  # under the hood, an option finix doesn't have) blocks it unconditionally.
+  boot.kernelParams = [ "modprobe.blacklist=nouveau" "nouveau.modeset=0" ];
 
   # Covers WiFi/other device firmware that isn't baked into the kernel
   # itself. finix's own install docs call this out as the fix for wifi
@@ -64,8 +78,9 @@
   users.users.goth = {
     isNormalUser = true;
     description = "goth";
-    extraGroups = [ "wheel" "video" "audio" "networkmanager" ];
-    hashedPassword = "$6$QJ3Ex.kogucotWwQ$l/m0lydG91nZbfM5Um899RSNaQkEWxp.6zaoyWHp7kaLhYs7z2tE/SnpnqciVdKOmzmTC15H51Kp.ACpw4p0..";
+    extraGroups = [ "wheel" "video" "audio" "networkmanager" "input" "render" ];
+    # hashed password -- generate your own with `mkpasswd -m sha-512`
+    password = "$6$QJ3Ex.kogucotWwQ$l/m0lydG91nZbfM5Um899RSNaQkEWxp.6zaoyWHp7kaLhYs7z2tE/SnpnqciVdKOmzmTC15H51Kp.ACpw4p0..";
     packages = with pkgs; [];
   };
 
