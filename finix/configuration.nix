@@ -10,6 +10,7 @@
     ./extras.nix
     ./home.nix
     ./stylix.nix
+    ./caelestia.nix
   ];
 
   # Stick to finix's default `pkgs.linuxPackages` (well-tested against the

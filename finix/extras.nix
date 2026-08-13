@@ -37,7 +37,10 @@
   };
 
   environment.systemPackages = with pkgs; [
-    swaylock swayidle    # lock + idle; caelestia's own lock isn't ported yet
+    # swayidle drives the idle timeout (see the spawn-at-startup in
+    # home.nix); the actual lock screen is caelestia's, triggered over its
+    # IPC. swaylock is the standalone fallback if caelestia ever comes out.
+    swaylock swayidle
     pavucontrol          # the audio app the caelestia config points at
     papirus-icon-theme
     libnotify

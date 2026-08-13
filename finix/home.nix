@@ -3,8 +3,9 @@
 # NOTE: finix has no systemd user session, so home-manager *user services* do
 # not work here -- only home.packages, home.file and program configs. What
 # gothness ran as systemd.user.services (caelestia shell, wallpaper engine,
-# idle-lock) is started from niri's `spawn-at-startup` at the bottom instead.
-# caelestia-shell itself isn't wired in below yet -- see caelestia.nix.
+# idle-lock) is started from niri's `spawn-at-startup` instead, below.
+#
+# Theming lives in stylix.nix, not here.
 { ... }:
 {
   # A module function (not a plain attrset) so `lib` here resolves through
@@ -44,13 +45,20 @@
         + ''
 
         // ---------- added for finix (no systemd user session) ----------
+        // Everything below was a systemd user service on gothness.
+
+        // the bar/launcher/dashboard: was upstream's caelestia home-manager
+        // module, whose unit runs the binary with no arguments (see
+        // caelestia.nix).
+        spawn-at-startup "caelestia-shell"
+
         // wallpaper engine: was systemd.user.services.wallpaper
         spawn-at-startup "linux-wallpaperengine" "--fps" "30" "--screen-root" "HDMI-A-1" "--screen-root" "DP-1" "2876210462"
 
-        // idle auto-lock: was systemd.user.services.idle. Currently calls
-        // out to caelestia-shell's lock IPC, which isn't wired up yet (see
-        // caelestia.nix) -- swap for `swaylock` once that's sorted, or now
-        // if you'd rather have a working lock screen today:
+        // idle auto-lock: was systemd.user.services.idle. caelestia-shell's
+        // own lock (modules/lock) only reacts to this IPC call -- there's no
+        // separate lock binary to run. If caelestia is ever taken back out,
+        // this needs to become:
         //   spawn-at-startup "swayidle" "-w" "timeout" "300" "swaylock" "before-sleep" "swaylock"
         spawn-at-startup "swayidle" "-w" "timeout" "300" "caelestia-shell ipc call lock lock" "before-sleep" "caelestia-shell ipc call lock lock"
       '';
