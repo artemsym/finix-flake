@@ -43,6 +43,23 @@
 
       wait
     '';
+
+    # Static wallpaper, replacing linux-wallpaperengine (which only ever
+    # played Steam Workshop items and needed them downloaded locally first).
+    # swaybg is the plain wl-roots wallpaper setter and works under niri.
+    #
+    # Tries both capitalisations because ~/Downloads vs ~/downloads depends
+    # on the locale the directory was created under, and picking the wrong
+    # one just silently leaves the screen empty.
+    setWallpaper = pkgs.writeShellScript "set-wallpaper" ''
+      for f in "$HOME/Downloads/end.jpg" "$HOME/downloads/end.jpg"; do
+        if [ -f "$f" ]; then
+          exec ${pkgs.swaybg}/bin/swaybg -i "$f" -m fill
+        fi
+      done
+      echo "set-wallpaper: no end.jpg under ~/Downloads or ~/downloads" >&2
+      exit 1
+    '';
   in
   {
     home.username = "goth";
@@ -89,8 +106,10 @@
         // caelestia.nix).
         spawn-at-startup "caelestia-shell"
 
-        // wallpaper engine: was systemd.user.services.wallpaper
-        spawn-at-startup "linux-wallpaperengine" "--fps" "30" "--screen-root" "HDMI-A-1" "--screen-root" "DP-1" "2481537915"
+        // wallpaper: was systemd.user.services.wallpaper, which ran
+        // linux-wallpaperengine against a Steam Workshop id. Now a plain
+        // static image via swaybg -- see setWallpaper above.
+        spawn-at-startup "${setWallpaper}"
 
         // idle auto-lock: was systemd.user.services.idle. caelestia-shell's
         // own lock (modules/lock) only reacts to this IPC call -- there's no
