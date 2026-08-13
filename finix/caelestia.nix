@@ -11,32 +11,33 @@
 # what spawn-at-startup runs.
 { inputs, pkgs, ... }:
 let
-  # Fix 1: the QML plugin's CMakeLists asks pkg-config for `cava`
+  # Fix 1: the plugin doesn't build against libcava 0.10.7, which is what
+  # nixpkgs-unstable carries. Two independent breaks, both introduced by
+  # that one release:
   #
-  #     pkg_check_modules(Cava IMPORTED_TARGET cava REQUIRED)
+  #   * 0.10.7 made `struct cava_plan` opaque. The installed header
+  #     (include/cava/cavacore.h) only forward-declares it now, where 0.10.6
+  #     spelled the struct out in full. cavaprovider.cpp reads
+  #     `m_plan->status` directly, so against 0.10.7 that's a hard
+  #     "member access into incomplete type 'struct cava_plan'".
   #
-  # which means it wants a `cava.pc`. nixpkgs' libcava is the LukashonakV
-  # cava fork, and that fork renamed its pkg-config file between releases:
-  # 0.10.4 generated it with `filebase: 'cava'` (-> cava.pc), 0.10.7 -- what
-  # nixpkgs-unstable carries now -- uses `filebase: 'libcava'` (-> libcava.pc).
-  # So cmake finds nothing and the plugin fails to configure. It's the same
-  # library under both names, so aliasing the .pc is enough. (This is also
-  # why it builds on gothness: that flake is pinned to nixos-26.05, which
-  # still has the older libcava.)
-  libcavaWithCavaPc = pkgs.libcava.overrideAttrs (old: {
-    postInstall = (old.postInstall or "") + ''
-      alias_made=
-      for pcdir in "$out/lib/pkgconfig" "''${dev-}/lib/pkgconfig"; do
-        if [ -e "$pcdir/libcava.pc" ]; then
-          ln -sf libcava.pc "$pcdir/cava.pc"
-          alias_made=1
-        fi
-      done
-      if [ -z "$alias_made" ]; then
-        echo "libcava.pc not found -- cava.pc alias not created, caelestia's plugin will fail to configure" >&2
-        exit 1
-      fi
-    '';
+  #   * 0.10.7 also renamed its pkg-config file -- meson's pkg.generate went
+  #     from `filebase: 'cava'` to `filebase: 'libcava'` -- so the plugin's
+  #     `pkg_check_modules(Cava IMPORTED_TARGET cava REQUIRED)` finds
+  #     nothing and cmake fails before it even gets to the compile error.
+  #
+  # Both go away by pinning 0.10.6, which is what nixos-26.05 ships and
+  # therefore exactly the pairing gothness builds against today. Version and
+  # hash are lifted verbatim from that release's own
+  # pkgs/by-name/li/libcava/package.nix, so this isn't a guessed hash.
+  libcava_0_10_6 = pkgs.libcava.overrideAttrs (_: rec {
+    version = "0.10.6";
+    src = pkgs.fetchFromGitHub {
+      owner = "LukashonakV";
+      repo = "cava";
+      tag = version;
+      hash = "sha256-63be1wypMiqhPA6sjMebmFE6yKpTj/bUE53sMWun554=";
+    };
   });
 
   # Fix 2: caelestia hardcodes app2unit for every app it launches -- the
@@ -72,7 +73,7 @@ let
   caelestia =
     (inputs.niri-caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-shell.override {
       app2unit = app2unitShim;
-      libcava = libcavaWithCavaPc;
+      libcava = libcava_0_10_6;
       withCli = true;
     });
 in
