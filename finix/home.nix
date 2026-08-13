@@ -180,27 +180,36 @@
             };
         };
 
-        # Spelled out rather than left to the default set: the default is
-        # resolved at fastfetch's runtime and quietly drops modules it can't
-        # source, which on a finit system with no systemd is a fair few.
+        # Matches the finix maintainer's output. His own config sets nothing
+        # for fastfetch, so that's just the stock module set -- pinning it
+        # here keeps the layout from drifting when fastfetch changes its
+        # defaults. "initsystem" is the one worth keeping: on finix it
+        # reports Finit rather than systemd.
         modules = [
           "title"
           "separator"
           "os"
           "host"
           "kernel"
+          "initsystem"
           "uptime"
           "packages"
           "shell"
           "display"
           "wm"
+          "theme"
+          "icons"
+          "font"
+          "cursor"
           "terminal"
+          "terminalfont"
           "cpu"
           "gpu"
           "memory"
           "swap"
           "disk"
           "localip"
+          "locale"
           "break"
           "colors"
         ];
