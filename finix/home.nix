@@ -5,12 +5,22 @@
 # gothness ran as systemd.user.services (caelestia shell, wallpaper engine,
 # idle-lock) is started from niri's `spawn-at-startup` at the bottom instead.
 # caelestia-shell itself isn't wired in below yet -- see caelestia.nix.
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   home-manager.users.goth = {
     home.username = "goth";
     home.homeDirectory = "/home/goth";
     home.stateVersion = "26.05";
+
+    # gtk.enable below mirrors the icon theme into dconf. There's no dbus/
+    # dconf session available when finit runs hm-activate at boot (no
+    # systemd user session on finix), so that step fails and aborts the
+    # *whole* activation script before it reaches the xdg.configFile
+    # symlinks (config.kdl among them) -- config.kdl silently stays a
+    # missing/stale file after every boot. GTK3/4 icon settings still land
+    # via ~/.config/gtk-{3,4}.0/settings.ini independent of dconf, so
+    # skipping this step costs nothing on finix.
+    home.activation.dconfSettings = lib.mkForce (lib.hm.dag.entryAnywhere "");
 
     # niri config: the gothness one verbatim (see ./dotfiles/niri-config.kdl),
     # plus the startup entries that replace the systemd user services.
