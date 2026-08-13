@@ -5,9 +5,13 @@
 # gothness ran as systemd.user.services (caelestia shell, wallpaper engine,
 # idle-lock) is started from niri's `spawn-at-startup` at the bottom instead.
 # caelestia-shell itself isn't wired in below yet -- see caelestia.nix.
-{ pkgs, lib, ... }:
+{ ... }:
 {
-  home-manager.users.goth = {
+  # A module function (not a plain attrset) so `lib` here resolves through
+  # home-manager's own submodule specialArgs -- that's the extended lib
+  # with `.hm.dag.*`, needed below. The outer NixOS-level `lib` doesn't
+  # have that namespace.
+  home-manager.users.goth = { pkgs, lib, ... }: {
     home.username = "goth";
     home.homeDirectory = "/home/goth";
     home.stateVersion = "26.05";
