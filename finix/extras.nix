@@ -34,6 +34,14 @@
     NIXOS_OZONE_WL.default = "1";          # Electron/VSCode on native Wayland
     LIBVA_DRIVER_NAME.default = "nvidia";
     NVD_BACKEND.default = "direct";
+
+    # home-manager's qt module derives this from qt.platformTheme.name
+    # (home.nix), but it only ever writes it to home.sessionVariables and
+    # systemd.user.sessionVariables -- neither of which a greetd -> niri
+    # session ever reads. Without it Qt loads no platform theme, so
+    # QIcon::fromTheme resolves nothing and caelestia-shell (Qt6/QML) draws
+    # every app icon as the magenta/black "missing image" checkerboard.
+    QT_QPA_PLATFORMTHEME.default = "gtk3";
   };
 
   environment.systemPackages = with pkgs; [
