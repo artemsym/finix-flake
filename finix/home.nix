@@ -12,7 +12,39 @@
   # home-manager's own submodule specialArgs -- that's the extended lib
   # with `.hm.dag.*`, needed below. The outer NixOS-level `lib` doesn't
   # have that namespace.
-  home-manager.users.goth = { pkgs, lib, ... }: {
+  home-manager.users.goth = { pkgs, lib, osConfig, ... }:
+  let
+    # finix's pipewire and wireplumber modules install the packages and
+    # write /etc config, but neither defines a finit service -- grep them
+    # for "finit." and you get zero hits. Nothing on the system starts
+    # either daemon, and there's no systemd user session to socket-activate
+    # them the way NixOS does. So the session has to start them, or there
+    # is no audio server running at all.
+    #
+    # That's what breaks bluetooth headsets: bluez accepts the pairing,
+    # then finds no A2DP endpoint registered (registering it is
+    # wireplumber's job) and drops the link a moment later -- while the
+    # headphones themselves still think they're connected. Exactly the
+    # connect/disconnect flap seen here.
+    startAudio = pkgs.writeShellScript "start-audio-session" ''
+      ${osConfig.programs.pipewire.package}/bin/pipewire &
+
+      # pipewire-pulse and wireplumber both give up if pipewire's socket
+      # isn't there yet, so wait for it instead of racing the startup.
+      i=0
+      while [ "$i" -lt 100 ]; do
+        [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && break
+        ${pkgs.coreutils}/bin/sleep 0.05
+        i=$((i + 1))
+      done
+
+      ${osConfig.programs.pipewire.package}/bin/pipewire-pulse &
+      ${osConfig.programs.wireplumber.package}/bin/wireplumber &
+
+      wait
+    '';
+  in
+  {
     home.username = "goth";
     home.homeDirectory = "/home/goth";
     home.stateVersion = "26.05";
@@ -46,6 +78,11 @@
 
         // ---------- added for finix (no systemd user session) ----------
         // Everything below was a systemd user service on gothness.
+
+        // pipewire + pipewire-pulse + wireplumber. Not a gothness port --
+        // on NixOS services.pipewire.enable handles this. finix ships the
+        // packages but starts nothing, so the session does it.
+        spawn-at-startup "${startAudio}"
 
         // the bar/launcher/dashboard: was upstream's caelestia home-manager
         // module, whose unit runs the binary with no arguments (see
@@ -122,17 +159,66 @@
     # which stylix rewrites, so "red" came out muted and "black" landed on
     # #0d1117 -- the same value as foot's background, i.e. invisible. These
     # are absolute values and render the same regardless of the palette.
+    # The snowflake has six arms and fastfetch colours them from six slots,
+    # not two -- setting only 1 and 2 recoloured a single arm each and left
+    # the other four on the stock blues. All six are assigned here,
+    # alternating so opposite arms match.
     programs.fastfetch = {
       enable = true;
       settings = {
         logo = {
           source = "nixos";
-          color = {
-            "1" = "38;2;255;45;45";      # vivid red
-            "2" = "38;2;125;125;125";    # mid grey, reads as the dark half
-          };
+          color =
+            let
+              red = "38;2;255;45;45";
+              dark = "38;2;125;125;125";
+            in
+            {
+              "1" = red;  "2" = dark;
+              "3" = red;  "4" = dark;
+              "5" = red;  "6" = dark;
+            };
         };
+
+        # Spelled out rather than left to the default set: the default is
+        # resolved at fastfetch's runtime and quietly drops modules it can't
+        # source, which on a finit system with no systemd is a fair few.
+        modules = [
+          "title"
+          "separator"
+          "os"
+          "host"
+          "kernel"
+          "uptime"
+          "packages"
+          "shell"
+          "display"
+          "wm"
+          "terminal"
+          "cpu"
+          "gpu"
+          "memory"
+          "swap"
+          "disk"
+          "localip"
+          "break"
+          "colors"
+        ];
       };
+    };
+
+    # Autostart fastfetch on every interactive shell. initExtra lands in the
+    # interactive branch of .bashrc, so it won't fire for scp/rsync and
+    # other non-interactive sessions -- printing to those breaks them.
+    #
+    # Enabling home-manager's bash module here also finally wires up
+    # starship: its module only injects the shell init when the matching
+    # shell module is enabled, and until now none was.
+    programs.bash = {
+      enable = true;
+      initExtra = ''
+        ${pkgs.fastfetch}/bin/fastfetch
+      '';
     };
 
     # No `gtk` block here on purpose: stylix's gtk target sets gtk.enable,
