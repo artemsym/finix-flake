@@ -16,14 +16,15 @@
     home.homeDirectory = "/home/goth";
     home.stateVersion = "26.05";
 
-    # gtk.enable below mirrors the icon theme into dconf. There's no dbus/
-    # dconf session available when finit runs hm-activate at boot (no
-    # systemd user session on finix), so that step fails and aborts the
-    # *whole* activation script before it reaches the xdg.configFile
-    # symlinks (config.kdl among them) -- config.kdl silently stays a
-    # missing/stale file after every boot. GTK3/4 icon settings still land
-    # via ~/.config/gtk-{3,4}.0/settings.ini independent of dconf, so
-    # skipping this step costs nothing on finix.
+    # Anything that turns on home-manager's gtk module (stylix's gtk target
+    # does, see stylix.nix) makes it mirror the theme into dconf during
+    # activation. finit runs hm-activate at boot with no dbus session and
+    # no dconf service -- there's no systemd user session on finix -- so
+    # that step throws and aborts the *whole* activation script before it
+    # reaches the xdg.configFile symlinks (config.kdl among them), leaving
+    # config.kdl a missing or stale file after every boot. GTK3/4 still
+    # read ~/.config/gtk-{3,4}.0/settings.ini, which is written
+    # independently of dconf, so skipping this step costs nothing here.
     home.activation.dconfSettings = lib.mkForce (lib.hm.dag.entryAnywhere "");
 
     # niri config: the gothness one verbatim (see ./dotfiles/niri-config.kdl),
@@ -55,24 +56,15 @@
       '';
     };
 
+    # Font, colours and terminal opacity now come from stylix (stylix.nix).
+    # Its foot target writes `settings.main.font` and the entire
+    # `colors-dark` block itself, and those definitions are plain values,
+    # not mkDefault -- setting them here too is a merge conflict, not an
+    # override. Only what stylix has no opinion about is left.
     programs.foot = {
       enable = true;
       settings = {
-        main = {
-          font = "JetBrainsMono Nerd Font:size=12";
-          pad = "8x8";
-        };
-        "colors-dark" = {
-          alpha = "0.5";
-          background = "2d3a5c";
-          foreground = "cfe4ff";
-          regular0 = "0a0e1a"; regular1 = "e88388"; regular2 = "a8cc8c";
-          regular3 = "dbab79"; regular4 = "71bef2"; regular5 = "d290e4";
-          regular6 = "66c2cd"; regular7 = "cfe4ff";
-          bright0 = "475266"; bright1 = "f09a97"; bright2 = "b6d7a8";
-          bright3 = "f0c896"; bright4 = "9ad0ff"; bright5 = "e3a8f0";
-          bright6 = "8fd4de"; bright7 = "ffffff";
-        };
+        main.pad = "8x8";
         key-bindings = {
           clipboard-copy = "Control+c";
           clipboard-paste = "Control+v";
@@ -106,17 +98,19 @@
       settings.user.email = "artemsym@users.noreply.github.com";
     };
 
-    # Fixes blank/checkerboard icons -- nothing was telling GTK/Qt apps which
-    # icon theme to use.
-    gtk = {
-      enable = true;
-      iconTheme = {
-        name = "Papirus-Dark";
-        package = pkgs.papirus-icon-theme;
-      };
-    };
+    # No `gtk` block here on purpose: stylix's gtk target sets gtk.enable,
+    # gtk.font and gtk.theme, and stylix.icons (see stylix.nix) sets
+    # gtk.iconTheme -- which is what used to be hand-written here to fix
+    # the blank/checkerboard icons.
 
-    # Qt apps don't read GTK icon settings on their own.
+    # Qt is the one thing left hand-set. Stylix's qt target defaults to off
+    # unless it's handed a `nixosConfig`, which finix's home-manager doesn't
+    # pass (it passes `osConfig`), so nothing collides here. Left on gtk3
+    # rather than force-enabling that target: gtk3 makes Qt apps follow the
+    # GTK theme stylix already themes, whereas the target would pull in
+    # qtct + kvantum and expect QT_QPA_PLATFORMTHEME in the session env --
+    # which on finix means another security.pam.environment entry, since a
+    # greetd -> niri session never sources home-manager's session vars.
     qt = {
       enable = true;
       platformTheme.name = "gtk3";

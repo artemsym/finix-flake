@@ -9,6 +9,7 @@
     ./polkit-fix.nix
     ./extras.nix
     ./home.nix
+    ./stylix.nix
   ];
 
   # Stick to finix's default `pkgs.linuxPackages` (well-tested against the
